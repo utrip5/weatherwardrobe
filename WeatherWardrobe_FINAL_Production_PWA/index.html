@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#304ffe">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="WeatherWardrobe">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://api.open-meteo.com https://geocoding-api.open-meteo.com; img-src 'self' data:; style-src 'self'; script-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<link rel="stylesheet" href="styles.css">
+<title>WeatherWardrobe</title>
+</head>
+<body>
+<div id="app">
+<header class="topbar">
+  <div><div class="brand">WeatherWardrobe</div><div class="subtitle" id="cityLabel">—</div></div>
+  <button class="icon-btn" id="locationBtn" aria-label="Location">⌖</button>
+</header>
+
+<main>
+  <section id="loading" class="panel center"><div class="spinner"></div><p data-i18n="loading">Загружаем погоду…</p></section>
+  <section id="error" class="panel hidden">
+    <h2 data-i18n="errorTitle">Не удалось загрузить данные</h2><p id="errorText"></p>
+    <button class="primary" id="retryBtn" data-i18n="retry">Повторить</button>
+  </section>
+
+  <section id="todayTab" class="tab-page hidden">
+    <div id="todayContent"></div>
+  </section>
+
+  <section id="forecastTab" class="tab-page hidden">
+    <div class="page-title"><h1 data-i18n="forecast">Прогноз</h1><span id="forecastCity"></span></div>
+    <div id="forecastContent"></div>
+  </section>
+
+  <section id="wardrobeTab" class="tab-page hidden">
+    <div class="page-title"><h1 data-i18n="myWardrobe">Мой гардероб</h1><button class="small-primary" id="addClothesBtn" data-i18n="add">Добавить</button></div>
+    <div id="wardrobeContent"></div>
+  </section>
+
+  <section id="settingsTab" class="tab-page hidden">
+    <div class="page-title"><h1 data-i18n="settings">Настройки</h1></div>
+    <div class="setting-row"><span data-i18n="language">Язык</span><select id="languageSelect"><option value="ru">Русский</option><option value="en">English</option></select></div>
+    <div class="setting-row"><span data-i18n="gender">Пол</span><select id="genderSelect"><option value="male">Мужской / Male</option><option value="female">Женский / Female</option><option value="unisex">Унисекс / Unisex</option></select></div>
+    <div class="setting-row"><span data-i18n="units">Единицы</span><select id="unitsSelect"><option value="metric">°C / km/h</option><option value="imperial">°F / mph</option></select></div>
+    <div class="setting-row"><span data-i18n="temperatureFeel">Как вы ощущаете холод</span><select id="feelSelect"><option value="cold">🥶 Мерзну</option><option value="normal">🙂 Нормально</option><option value="hot">🔥 Мне жарко</option></select></div>
+    <div class="setting-row"><span data-i18n="activity">Активность</span><select id="activitySelect"><option value="walk">🚶 Прогулка</option><option value="commute">🚆 Дорога/город</option><option value="office">💼 Офис</option><option value="sport">🏃 Спорт</option><option value="outdoor">🏕️ Долго на улице</option></select></div>
+    <div class="setting-row"><span data-i18n="location">Местоположение</span><button class="small-primary" id="useLocation" data-i18n="useGPS">Использовать GPS</button></div>
+    <p class="muted" data-i18n="privacy">Настройки и гардероб хранятся на устройстве. API-ключи в браузер не встраиваются.</p>
+  </section>
+</main>
+
+<nav class="bottom-nav" aria-label="Navigation">
+  <button class="nav-item active" data-tab="today">☀️<span data-i18n="today">Сегодня</span></button>
+  <button class="nav-item" data-tab="forecast">📅<span data-i18n="forecast">Прогноз</span></button>
+  <button class="nav-item" data-tab="wardrobe">👕<span data-i18n="wardrobe">Гардероб</span></button>
+  <button class="nav-item" data-tab="settings">⚙️<span data-i18n="settings">Настройки</span></button>
+</nav>
+</div>
+
+<dialog id="cityDialog"><form method="dialog" class="dialog-card">
+  <h2 data-i18n="cityTitle">Выберите город</h2><input id="cityInput" autocomplete="off" placeholder="Berlin / Берлин">
+  <div id="cityResults"></div><button value="cancel" class="ghost" data-i18n="cancel">Отмена</button>
+</form></dialog>
+
+<dialog id="clothesDialog"><form class="dialog-card" id="clothesForm">
+  <h2 data-i18n="addClothing">Добавить вещь</h2>
+  <input id="clothesName" required maxlength="80" placeholder="Например, белая футболка">
+  <select id="clothesCategory"></select>
+  <select id="clothesGender"><option value="unisex">Унисекс</option><option value="male">Мужское</option><option value="female">Женское</option></select>
+  <input id="clothesPhoto" type="file" accept="image/jpeg,image/png,image/webp">
+  <div class="form-grid"><label>Тепло<input id="warmth" type="range" min="0" max="5" step=".5" value="2"></label><label>Ветер<input id="windProtection" type="range" min="0" max="5" step=".5" value="1"></label><label>Дождь<input id="rainProtection" type="range" min="0" max="5" step=".5" value="1"></label></div>
+  <div class="form-actions"><button type="button" class="ghost" id="closeClothes" data-i18n="cancel">Отмена</button><button class="primary" data-i18n="save">Сохранить</button></div>
+</form></dialog>
+<script src="app.js" defer></script>
+</body>
+</html>
